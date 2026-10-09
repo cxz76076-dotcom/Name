@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>منصة ألعاب الهوامير 🔥</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --primary: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --warn: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            min-height: 100dvh;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            min-height: 100dvh;
+            padding: 1.2rem;
+            padding-bottom: 5rem;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            text-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+            margin-bottom: 0.3rem;
+        }
+
+        .sub-title {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .section-label {
+            width: 100%;
+            max-width: 1100px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            margin: 1.5rem 0 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.9rem;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        @media (min-width: 768px) {
+            .games-grid {
+                grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+                gap: 1.2rem;
+            }
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 165px;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .game-card:active {
+            transform: scale(0.96);
+        }
+
+        .game-card h3 {
+            font-size: 1.05rem;
+            color: #fff;
+            margin-bottom: 0.4rem;
+        }
+
+        .game-card p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            line-height: 1.3;
+            flex-grow: 1;
+        }
+
+        .game-card.maintenance {
+            filter: grayscale(0.85) opacity(0.75);
+            cursor: not-allowed;
+            background: #141d2d;
+            border-color: #243044;
+        }
+
+        .game-card.maintenance:active {
+            transform: none;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 0.8rem;
+            transition: opacity 0.15s;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+        .btn-warn { background: var(--warn); }
+        .btn-gray { background: #475569; }
+
+        .back-btn {
+            align-self: flex-start;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-bottom: 1.2rem;
+            cursor: pointer;
+        }
+
+        .status-badge {
+            background: #020617;
+            border: 1px solid var(--card-border);
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* 1. الميزان */
+        #balance-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            height: 380px;
+            background: #0f172a;
+            border: 2px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            touch-action: none;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 2. إكس أو */
+        .ttt-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 85px);
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .ttt-cell {
+            width: 85px;
+            height: 85px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+        }
+
+        /* 3. الذاكرة */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 70px);
+            gap: 8px;
+            margin-top: 1rem;
+        }
+
+        .mem-card {
+            width: 70px;
+            height: 70px;
+            background: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .mem-card.flipped {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            cursor: default;
+        }
+
+        .mem-card .content { display: none; }
+        .mem-card.flipped .content { display: block; }
+
+        /* 4. النقر الصاروخي */
+        #clk-btn {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--warn), #b45309);
+            border: 4px solid #fde68a;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 2rem 0;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.5);
+            touch-action: manipulation;
+        }
+
+        #clk-btn:active { transform: scale(0.92); }
+
+        /* 5. سرعة البديهة */
+        #react-box {
+            width: 100%;
+            max-width: 320px;
+            height: 250px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 1.5rem;
+            cursor: pointer;
+            background: var(--card-bg);
+            border: 2px dashed var(--card-border);
+        }
+
+        /* 6. طق الملقوف */
+        .mole-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 85px);
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .mole-hole {
+            width: 85px;
+            height: 85px;
+            background: #020617;
+            border: 2px solid var(--card-border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        /* 7. سيمون يقول */
+        .simon-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 110px);
+            gap: 12px;
+            margin-top: 1rem;
+        }
+
+        .simon-btn {
+            width: 110px;
+            height: 110px;
+            border-radius: 16px;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: opacity 0.1s, transform 0.1s;
+        }
+
+        .simon-btn.lit {
+            opacity: 1 !important;
+            transform: scale(0.96);
+            filter: brightness(1.3);
+        }
+
+        /* 8. لعبة الحظ */
+        .dice-box {
+            font-size: 5rem;
+            margin: 1.5rem 0;
+        }
+
+        /* 9. سرعة الطباعة */
+        #typing-target {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 1.5rem 0;
+        }
+
+        #typing-input {
+            width: 100%;
+            max-width: 280px;
+            padding: 0.8rem;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: #fff;
+            font-size: 1.2rem;
+            text-align: center;
+            outline: none;
+        }
+
+        /* 10. إيقاف العداد */
+        #stopwatch-num {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: var(--warn);
+            margin: 2rem 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 11. تفادي الصخور */
+        #dodge-canvas {
+            background: #020617;
+            border: 2px solid var(--card-border);
+            border-radius: 14px;
+            touch-action: none;
+        }
+
+        /* 12. لمس الفقاعات */
+        #bubble-area {
+            position: relative;
+            width: 100%;
+            max-width: 320px;
+            height: 360px;
+            background: #020617;
+            border: 2px solid var(--card-border);
+            border-radius: 14px;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .bubble-item {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #60a5fa, #1d4ed8);
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.6);
+            cursor: pointer;
+        }
+
+        /* نافذة التنبيه */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+            padding: 1.2rem;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+        }
+
+        .modal-card h3 {
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            line-height: 1.4;
+        }
+
+        #baloot-text {
+            line-height: 1.8;
+            font-size: 1.05rem;
+            color: #fde047;
+            text-align: center;
+            background: #141d2d;
+            padding: 1.5rem;
+            border-radius: 14px;
+            border: 2px dashed var(--danger);
+            max-width: 500px;
+        }
+
+        /* حقوق الموقع والمصمم */
+        .footer {
+            margin-top: auto;
+            padding-top: 3rem;
+            text-align: center;
+            width: 100%;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .footer p {
+            margin-bottom: 0.3rem;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: #60a5fa;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- القائمة الرئيسية -->
+    <div id="scr-menu" class="screen active">
+        <header>
+            <h1>🔥 منصة ألعاب الهوامير 🔥</h1>
+            <p class="sub-title">14 لعبة شغالة 100% بدون أي جليتشات + قسم التحف والتشويق 😎</p>
+        </header>
+
+        <div class="section-label" style="color: var(--success);">
+            <span>🎮 الألعاب النشطة (14 لعبة):</span>
+        </div>
+        <div class="games-grid">
+            <div class="game-card" onclick="nav('menu-bal')">
+                <h3>⚖️ ميزان الهوامير</h3>
+                <p>الشخصية تثبت مكانها ومستحيل تنزلق أو تخترق الأرضية!</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="nav('menu-ttt')">
+                <h3>❌ إكس أو الذكية</h3>
+                <p>العب ضد خويك أو البوت بقفل تحكم كامل وقت دوره.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="mem_open()">
+                <h3>🧠 ذاكرة الفيل</h3>
+                <p>طابق البطاقات المتشابهة واختبر سرعة استيعابك.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="clk_open()">
+                <h3>⚡ النقر الصاروخي</h3>
+                <p>تحدي الـ 10 ثواني، كم نقرة تقدر تسوي؟</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="react_open()">
+                <h3>⏱️ سرعة الاستجابة</h3>
+                <p>انطر اللون الأخضر والمس الشاشة فوراً بأقل ملي ثانية.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="rps_open()">
+                <h3>✊ حجرة ورقة مقص</h3>
+                <p>تحدي سريع ومباشر ضد الذكاء الاصطناعي.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="col_open()">
+                <h3>🎨 لحسة الألوان</h3>
+                <p>هل معنى الكلمة هو نفس لون الخط؟ ركز ولا تضيع!</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="guess_open()">
+                <h3>🔢 صيد الرقم السري</h3>
+                <p>خمن الرقم من 1 لـ 100 بناءً على التلميحات.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="mole_open()">
+                <h3>🔨 طق الملقوف</h3>
+                <p>الوحش يظهر بسرعة في الحفر، الحقه واجلده!</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="math_open()">
+                <h3>🧮 الحساب الخاطف</h3>
+                <p>عمليات جمع وطرح سريعة تحت ضغط الوقت.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="simon_open()">
+                <h3>💡 أنوار سيمون</h3>
+                <p>احفظ تسلسل الألوان وأعد الضغط عليها بنفس الترتيب.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="dice_open()">
+                <h3>🎲 نرد الحظ الأكبر</h3>
+                <p>ارم النرد وحاول تطلع رقم أعلى من البوت.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="typing_open()">
+                <h3>⌨️ سرعة الأصابع</h3>
+                <p>اكتب الحروف الظاهرة بأسرع ما عندك قبل ما ينتهي الوقت.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="stopwatch_open()">
+                <h3>🎯 صيد الصفر المئوي</h3>
+                <p>وقف العداد بالضبط عند جزء من الثانية لاستهداف الدقة!</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="dodge_open()">
+                <h3>🚀 تفادي الصخور</h3>
+                <p>حرك سفينتك باللمس وتفادَ الشهب المتساقطة.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+            <div class="game-card" onclick="bubble_open()">
+                <h3>🫧 فقع الفقاعات</h3>
+                <p>فقع الفقاعات قبل ما تختفي واجمع أكبر عدد نقاط.</p>
+                <button class="btn">العب الآن</button>
+            </div>
+        </div>
+
+        <div class="section-label" style="color: var(--danger);">
+            <span>🛠️ ألعاب تحت الصيانة والتطوير (قسم التشويق):</span>
+        </div>
+        <div class="games-grid">
+            <div class="game-card maintenance" id="card-baloot" onclick="notify('اللعبة تحت الصيانة حالياً 🛠️')">
+                <h3>♠️ بلوت كويتي VIP</h3>
+                <p>تحت الصيانة 🛠️ (مغلقة مؤقتاً)</p>
+                <button class="btn btn-gray">مغلق</button>
+            </div>
+            <div class="game-card maintenance" onclick="notify('كوت بو ستة تحت الصيانة، جاري تبديل الورق 🃏🛠️')">
+                <h3>🃏 كوت بو ستة</h3>
+                <p>تحت الصيانة 🛠️</p>
+                <button class="btn btn-gray">مغلق</button>
+            </div>
+            <div class="game-card maintenance" onclick="notify('طاولة كيرم تحت الصيانة، ندهن الخشب بالبودرة 🎯🛠️')">
+                <h3>🎯 كيرم الدواوين</h3>
+                <p>تحت الصيانة 🛠️</p>
+                <button class="btn btn-gray">مغلق</button>
+            </div>
+            <div class="game-card maintenance" onclick="notify('شطرنج الأساتذة قيد التطوير، الملك مرتاح ♟️🛠️')">
+                <h3>♟️ شطرنج الأساتذة</h3>
+                <p>تحت الصيانة 🛠️</p>
+                <button class="btn btn-gray">مغلق</button>
+            </div>
+            <div class="game-card maintenance" onclick="notify('لودو الهوامير قيد الصيانة لضبط حركات النرد 🎲🛠️')">
+                <h3>🎲 لودو الهوامير</h3>
+                <p>تحت الصيانة 🛠️</p>
+                <button class="btn btn-gray">مغلق</button>
+            </div>
+            <div class="game-card maintenance" onclick="notify('أونو الغدار تحت الصيانة عشان بطاقات +4 🔄🛠️')">
+                <h3>🔄 أونو الغدار</h3>
+                <p>تحت الصيانة 🛠️</p>
+                <button class="btn btn-gray">مغلق</button>
+            </div>
+        </div>
+
+        <!-- حقوق الموقع -->
+        <div class="footer">
+            <p>جميع الحقوق محفوظة ©</p>
+            <p>مصمم الموقع</p>
+            <a href="https://www.tiktok.com/@_azxc" target="_blank">@_azxc</a>
+        </div>
+    </div>
+
+    <!-- 1. الميزان -->
+    <div id="scr-menu-bal" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ القائمة الرئيسية</button>
+        <h2 style="margin-bottom: 1.5rem;">اختر وضع لعبة الميزان ⚖️</h2>
+        <div class="games-grid" style="max-width: 400px;">
+            <div class="game-card" onclick="bal_start(false)">
+                <h3>🤖 اللعب ضد البوت</h3>
+                <p>البوت يلعب بدوره والقفل يمنع لمسك حتى ينتهي.</p>
+                <button class="btn">دخول</button>
+            </div>
+            <div class="game-card" onclick="bal_start(true)">
+                <h3>👥 لاعبين على نفس الشاشة</h3>
+                <p>الشاشة تنقلب 180 درجة كل دور براحة تامة.</p>
+                <button class="btn">دخول</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-game-bal" class="screen">
+        <button class="back-btn" onclick="bal_cleanup(); nav('menu')">⬅️ خروج</button>
+        <div id="bal-badge" class="status-badge">دور اللاعب 1</div>
+        <div id="balance-wrapper"></div>
+        <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.85rem;">المس المنطقة لإسقاط الشكل (الأشكال تتجمد مكانها بمجرد لمس الخشبة لمنع أي اختراق أو انزلاق)</p>
+    </div>
+
+    <!-- 2. إكس أو -->
+    <div id="scr-menu-ttt" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ القائمة الرئيسية</button>
+        <h2 style="margin-bottom: 1.5rem;">اختر نمط إكس أو ❌⭕</h2>
+        <div class="games-grid" style="max-width: 400px;">
+            <div class="game-card" onclick="ttt_start(true)">
+                <h3>🤖 ضد البوت</h3>
+                <button class="btn">ابدأ</button>
+            </div>
+            <div class="game-card" onclick="ttt_start(false)">
+                <h3>👥 شخصين</h3>
+                <button class="btn">ابدأ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-game-ttt" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ خروج</button>
+        <div id="ttt-badge" class="status-badge">دور X</div>
+        <div class="ttt-grid" id="ttt-grid"></div>
+        <button class="btn btn-warn" style="max-width: 275px; margin-top: 1.5rem;" onclick="ttt_start(ttt_isBot)">إعادة الجولة 🔄</button>
+    </div>
+
+    <!-- 3. الذاكرة -->
+    <div id="scr-game-mem" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ خروج</button>
+        <div class="status-badge">طابق البطاقات المتشابهة 🧠</div>
+        <div class="memory-grid" id="mem-grid"></div>
+    </div>
+
+    <!-- 4. النقر -->
+    <div id="scr-game-clk" class="screen">
+        <button class="back-btn" onclick="clk_stop(); nav('menu')">⬅️ خروج</button>
+        <div style="display:flex; gap:10px;">
+            <div class="status-badge" style="color:var(--warn)" id="clk-time">الوقت: 10</div>
+            <div class="status-badge" style="color:var(--success)" id="clk-score">النقاط: 0</div>
+        </div>
+        <button id="clk-btn" onclick="clk_tap(event)">اضغط هنا! ⚡</button>
+        <button class="btn btn-warn" id="clk-reset" style="display:none; max-width:200px;" onclick="clk_open()">جرب ثانية 🔄</button>
+    </div>
+
+    <!-- 5. سرعة الاستجابة -->
+    <div id="scr-game-react" class="screen">
+        <button class="back-btn" onclick="react_clear(); nav('menu')">⬅️ خروج</button>
+        <div class="status-badge">اختبار زمن رد الفعل ⏱️</div>
+        <div id="react-box" onclick="react_tap()">اضغط للبدء</div>
+    </div>
+
+    <!-- 6. حجرة ورقة مقص -->
+    <div id="scr-game-rps" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ خروج</button>
+        <div class="status-badge" id="rps-status">اختر حركتك لمواجهة البوت!</div>
+        <div style="font-size: 4rem; margin: 1.5rem 0;" id="rps-bot-view">🤖</div>
+        <div style="display: flex; gap: 12px;">
+            <button class="btn" style="font-size: 1.8rem; width: 75px; height: 75px; padding: 0;" onclick="rps_play('✊')">✊</button>
+            <button class="btn" style="font-size: 1.8rem; width: 75px; height: 75px; padding: 0;" onclick="rps_play('✋')">✋</button>
+            <button class="btn" style="font-size: 1.8rem; width: 75px; height: 75px; padding: 0;" onclick="rps_play('✌️')">✌️</button>
+        </div>
+    </div>
+
+    <!-- 7. الألوان -->
+    <div id="scr-game-col" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ خروج</button>
+        <div class="status-badge" id="col-score">النقاط: 0</div>
+        <div id="col-display" style="font-size: 3rem; font-weight: bold; margin: 2rem 0;">أحمر</div>
+        <div style="display: flex; gap: 15px; width: 100%; max-width: 280px;">
+            <button class="btn btn-success" onclick="col_vote(true)">مطابق ✔️</button>
+            <button class="btn btn-danger" onclick="col_vote(false)">مختلف ❌</button>
+        </div>
+    </div>
+
+    <!-- 8. صيد الرقم -->
+    <div id="scr-game-guess" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ خروج</button>
+        <div class="status-badge" id="guess-status">خمن رقماً بين 1 و 100</div>
+        <input type="number" id="guess-input" placeholder="اكتب هنا..." style="padding: 0.8rem; font-size: 1.2rem; border-radius: 10px; border: 1px solid var(--card-border); background: var(--card-bg); color: #fff; text-align: center; margin: 1.5rem 0; width: 100%; max-width: 240px; outline: none;">
+        <button class="btn" style="max-width: 240px;" onclick="guess_submit()">تأكيد التخمين 🎯</button>
+    </div>
+
+    <!-- 9. طق الملقوف -->
+    <div id="scr-game-mole" class="screen">
+        <button class="back-btn" onclick="mole_clear(); nav('menu')">⬅️ خروج</button>
+        <div style="display: flex; gap: 10px;">
+            <div class="status-badge" style="color:var(--warn)" id="mole-time">الوقت: 15</div>
+            <div class="status-badge" style="color:var(--success)" id="mole-score">النقاط: 0</div>
+        </div>
+        <div class="mole-grid" id="mole-grid"></div>
+        <button class="btn btn-warn" id="mole-reset" style="display:none; max-width: 200px; margin-top: 1.5rem;" onclick="mole_open()">العب مرة ثانية 🔄</button>
+    </div>
+
+    <!-- 10. الرياضيات -->
+    <div id="scr-game-math" class="screen">
+        <button class="back-btn" onclick="math_clear(); nav('menu')">⬅️ خروج</button>
+        <div style="display: flex; gap: 10px;">
+            <div class="status-badge" style="color:var(--warn)" id="math-time">الوقت: 10</div>
+            <div class="status-badge" style="color:var(--success)" id="math-score">النقاط: 0</div>
+        </div>
+        <div id="math-expr" style="font-size: 2.8rem; font-weight: bold; margin: 1.5rem 0; direction: ltr;">5 + 7</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 260px;" id="math-options"></div>
+        <button class="btn btn-warn" id="math-reset" style="display:none; max-width: 200px; margin-top: 1.5rem;" onclick="math_open()">إعادة 🔄</button>
+    </div>
+
+    <!-- 11. أنوار سيمون -->
+    <div id="scr-game-simon" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ خروج</button>
+        <div class="status-badge" id="simon-badge">المستوى: 1</div>
+        <div class="simon-grid">
+            <div class="simon-btn" id="simon-0" style="background:#ef4444;" onclick="simon_click(0)"></div>
+            <div class="simon-btn" id="simon-1" style="background:#3b82f6;" onclick="simon_click(1)"></div>
+            <div class="simon-btn" id="simon-2" style="background:#22c55e;" onclick="simon_click(2)"></div>
+            <div class="simon-btn" id="simon-3" style="background:#f59e0b;" onclick="simon_click(3)"></div>
+        </div>
+    </div>
+
+    <!-- 12. نرد الحظ -->
+    <div id="scr-game-dice" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ خروج</button>
+        <div class="status-badge" id="dice-status">اضغط رمي النرد لمنافسة البوت!</div>
+        <div style="display:flex; gap: 2.5rem; text-align: center; margin: 1rem 0;">
+            <div>
+                <p style="color:var(--primary); font-weight:bold;">أنت</p>
+                <div class="dice-box" id="dice-player">🎲</div>
+            </div>
+            <div>
+                <p style="color:var(--danger); font-weight:bold;">البوت</p>
+                <div class="dice-box" id="dice-bot">🎲</div>
+            </div>
+        </div>
+        <button class="btn" style="max-width: 220px;" onclick="dice_roll()">ارمِ النرد 🎲</button>
+    </div>
+
+    <!-- 13. سرعة الأصابع -->
+    <div id="scr-game-typing" class="screen">
+        <button class="back-btn" onclick="typing_clear(); nav('menu')">⬅️ خروج</button>
+        <div style="display: flex; gap: 10px;">
+            <div class="status-badge" style="color:var(--warn)" id="typing-time">الوقت: 15</div>
+            <div class="status-badge" style="color:var(--success)" id="typing-score">النقاط: 0</div>
+        </div>
+        <div id="typing-target">KUWAIT</div>
+        <input type="text" id="typing-input" autocomplete="off" autocorrect="off" autocapitalize="characters" oninput="typing_check()">
+        <button class="btn btn-warn" id="typing-reset" style="display:none; max-width: 200px; margin-top: 1.5rem;" onclick="typing_open()">إعادة المحاولة 🔄</button>
+    </div>
+
+    <!-- 14. صيد الصفر المئوي -->
+    <div id="scr-game-stopwatch" class="screen">
+        <button class="back-btn" onclick="stopwatch_clear(); nav('menu')">⬅️ خروج</button>
+        <div class="status-badge" id="stopwatch-status">حاول إيقاف العداد عند .00 بالضبط!</div>
+        <div id="stopwatch-num">0.00</div>
+        <button class="btn" id="stopwatch-btn" style="max-width: 220px;" onclick="stopwatch_toggle()">ابدأ العداد ⏱️</button>
+    </div>
+
+    <!-- 15. تفادي الصخور -->
+    <div id="scr-game-dodge" class="screen">
+        <button class="back-btn" onclick="dodge_clear(); nav('menu')">⬅️ خروج</button>
+        <div class="status-badge" id="dodge-score">النقاط: 0</div>
+        <canvas id="dodge-canvas" width="300" height="380"></canvas>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.6rem;">حرك إصبعك أو الماوس يمين ويسار لتفادي الكتل</p>
+    </div>
+
+    <!-- 16. فقع الفقاعات -->
+    <div id="scr-game-bubble" class="screen">
+        <button class="back-btn" onclick="bubble_clear(); nav('menu')">⬅️ خروج</button>
+        <div style="display: flex; gap: 10px;">
+            <div class="status-badge" style="color:var(--warn)" id="bubble-time">الوقت: 15</div>
+            <div class="status-badge" style="color:var(--success)" id="bubble-score">النقاط: 0</div>
+        </div>
+        <div id="bubble-area"></div>
+        <button class="btn btn-warn" id="bubble-reset" style="display:none; max-width: 200px; margin-top: 1.2rem;" onclick="bubble_open()">إعادة اللعب 🔄</button>
+    </div>
+
+    <!-- شاشة البلوت السرية -->
+    <div id="scr-game-baloot" class="screen">
+        <button class="back-btn" onclick="nav('menu')">⬅️ رجوع للقائمة الرئيسية</button>
+        <div id="baloot-text">
+            هلا بك يا الذيب! مفكر إني صدق بسويلك لعبة بلوت وتلعب وتاخذ راحتك؟ 😂<br><br>
+            أنا أصلاً نصاب يا ولد، وما راح أسوي لها صيانة نهائي! بس حاطها عشان أشوق الناس وأخليهم ينتظرون وهم مساكين ما يدرون إن السالفة كلها طقطقة ومقلب محترم! بجلدكم جلد بالموقع 😂🔥🃏<br><br>
+            تعيش وتاكل غيرها يا بطل! 🤣
+        </div>
+    </div>
+
+    <!-- نافذة المودال الموحدة -->
+    <div id="modal" class="modal">
+        <div class="modal-card">
+            <h3 id="modal-msg">تنبيه</h3>
+            <button class="btn" onclick="closeModal()">حسناً 👍</button>
+        </div>
+    </div>
+
+<script>
+    /* ========================================================
+       إدارة الشاشات والتنقل
+       ======================================================== */
+    function nav(screenKey) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById('scr-' + screenKey);
+        if (target) {
+            target.classList.add('active');
+            window.scrollTo(0, 0);
+        }
+    }
+
+    let modalHandler = null;
+    function notify(text, cb = null) {
+        document.getElementById('modal-msg').innerHTML = text;
+        document.getElementById('modal').style.display = 'flex';
+        modalHandler = cb;
+    }
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+        if (modalHandler) {
+            modalHandler();
+            modalHandler = null;
+        }
+    }
+
+    /* ========================================================
+       الرقم السري (1111) لفك قفل البلوت
+       ======================================================== */
+    let passBuffer = "";
+    window.addEventListener('keydown', (e) => {
+        passBuffer += e.key;
+        if (passBuffer.length > 4) passBuffer = passBuffer.slice(-4);
+        if (passBuffer === "1111") {
+            const card = document.getElementById('card-baloot');
+            if (card && card.classList.contains('maintenance')) {
+                card.classList.remove('maintenance');
+                card.innerHTML = `<h3>♠️ بلوت كويتي (سري)</h3><p>تم فك التشفير السري بنجاح! 🔓</p><button class="btn btn-success">ادخل الآن</button>`;
+                card.onclick = () => nav('game-baloot');
+                notify("تم فتح القسم السري للبلوت بنجاح! 🔓🔥");
+            }
+            passBuffer = "";
+        }
+    });
+
+    /* ========================================================
+       1. لعبة الميزان الفيزيائية (بدون جليتشات وتثبيت فوري)
+       ======================================================== */
+    let bEngine = null, bRender = null, bRunner = null;
+    let bIs2P = false, bTurn = 1, bInputLock = false;
+    let bGameOver = false;
+    const bEmojis = ['🤖', '🐱', '🦊', '👽', '👻', '🐸', '🐼', '🤡', '🐭', '🦁'];
+
+    function bal_start(is2P) {
+        bIs2P = is2P;
+        nav('game-bal');
+        bal_setup();
+    }
+
+    function bal_setup() {
+        bal_cleanup();
+        bTurn = 1;
+        bInputLock = false;
+        bGameOver = false;
+
+        const box = document.getElementById('balance-wrapper');
+        box.innerHTML = '';
+        box.style.transform = 'rotate(0deg)';
+        bal_updateUI();
+
+        bEngine = Matter.Engine.create({ positionIterations: 16, velocityIterations: 16 });
+        
+        const w = box.clientWidth || 360;
+        const h = box.clientHeight || 380;
+
+        bRender = Matter.Render.create({
+            element: box,
+            engine: bEngine,
+            options: { width: w, height: h, wireframes: false, background: '#0f172a' }
+        });
+
+        const pivot = Matter.Bodies.circle(w / 2, h - 80, 8, { isStatic: true, render: { fillStyle: '#ef4444' } });
+        const plank = Matter.Bodies.rectangle(w / 2, h - 80, w * 0.75, 24, {
+            friction: 1.0,
+            restitution: 0.0,
+            density: 0.08,
+            render: { fillStyle: '#3b82f6' }
+        });
+
+        const joint = Matter.Constraint.create({
+            bodyA: pivot,
+            bodyB: plank,
+            length: 0,
+            stiffness: 1
+        });
+
+        const floor = Matter.Bodies.rectangle(w / 2, h + 150, w * 3, 100, { isStatic: true });
+        Matter.World.add(bEngine.world, [pivot, plank, joint, floor]);
+
+        Matter.Events.on(bEngine, 'collisionStart', function(event) {
+            event.pairs.forEach(pair => {
+                const bodies = [pair.bodyA, pair.bodyB];
+                bodies.forEach(b => {
+                    if (b.plugin && b.plugin.isChar && !b.isStatic) {
+                        Matter.Body.setStatic(b, true);
+                    }
+                });
+            });
+        });
+
+        Matter.Events.on(bRender, 'afterRender', function() {
+            const ctx = bRender.context;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            Matter.Composite.allBodies(bEngine.world).forEach(body => {
+                if (body.plugin && body.plugin.emoji) {
+                    ctx.font = `${body.plugin.size}px sans-serif`;
+                    ctx.translate(body.position.x, body.position.y);
+                    ctx.rotate(body.angle);
+                    ctx.fillText(body.plugin.emoji, 0, 0);
+                    ctx.rotate(-body.angle);
+                    ctx.translate(-body.position.x, -body.position.y);
+                }
+            });
+        });
+
+        Matter.Events.on(bEngine, 'beforeUpdate', function() {
+            if (bGameOver) return;
+            if (Math.abs(plank.angle) > 0.85) {
+                bal_fail(`انهار الميزان بسبب الوزن الزائد! خسر اللاعب ${bTurn} 💥`);
+            }
+        });
+
+        box.addEventListener('pointerdown', bal_handleTap);
+
+        Matter.Render.run(bRender);
+        bRunner = Matter.Runner.create();
+        Matter.Runner.run(bRunner, bEngine);
+    }
+
+    function bal_handleTap(e) {
+        if (bInputLock || bGameOver || !bRender) return;
+        const rect = bRender.canvas.getBoundingClientRect();
+        const scale = bRender.canvas.width / rect.width;
+        let x = (e.clientX - rect.left) * scale;
+
+        if (bIs2P && bTurn === 2) {
+            x = (rect.right - e.clientX) * scale;
+        }
+
+        const minBound = bRender.canvas.width * 0.15;
+        const maxBound = bRender.canvas.width * 0.85;
+        if (x < minBound) x = minBound;
+        if (x > maxBound) x = maxBound;
+
+        bal_drop(x);
+    }
+
+    function bal_drop(x) {
+        bInputLock = true;
+        const size = Math.floor(Math.random() * 25) + 35;
+        const emoji = bEmojis[Math.floor(Math.random() * bEmojis.length)];
+
+        const charBody = Matter.Bodies.rectangle(x, 15, size * 0.8, size * 0.8, {
+            friction: 1.0,
+            restitution: 0.0,
+            density: (size * 2) * 0.0005,
+            inertia: Infinity,
+            plugin: { isChar: true, emoji: emoji, size: size },
+            render: { visible: false }
+        });
+
+        Matter.World.add(bEngine.world, charBody);
+
+        setTimeout(() => {
+            if (!bGameOver) bal_switch();
+        }, 1200);
+    }
+
+    function bal_switch() {
+        bTurn = bTurn === 1 ? 2 : 1;
+        bal_updateUI();
+
+        if (bIs2P) {
+            const box = document.getElementById('balance-wrapper');
+            box.style.transform = bTurn === 2 ? 'rotate(180deg)' : 'rotate(0deg)';
+            bInputLock = false;
+        } else {
+            if (bTurn === 2) {
+                bInputLock = true;
+                setTimeout(bal_botMove, 1000);
+            } else {
+                bInputLock = false;
+            }
+        }
+    }
+
+    function bal_botMove() {
+        if (bGameOver || !bRender) return;
+        const w = bRender.canvas.width;
+        const rndX = Math.random() * (w * 0.6) + (w * 0.2);
+        bal_drop(rndX);
+    }
+
+    function bal_fail(reason) {
+        if (bGameOver) return;
+        bGameOver = true;
+        bInputLock = true;
+        if (bRunner) Matter.Runner.stop(bRunner);
+        notify(reason, () => nav('menu'));
+    }
+
+    function bal_updateUI() {
+        const badge = document.getElementById('bal-badge');
+        if (bTurn === 1) {
+            badge.innerText = "دور اللاعب 1";
+            badge.style.color = "var(--primary)";
+        } else {
+            badge.innerText = bIs2P ? "دور اللاعب 2 (الشاشة مقلوبة)" : "دور البوت... 🤖 (النقر مقفل)";
+            badge.style.color = bIs2P ? "var(--success)" : "var(--warn)";
+        }
+    }
+
+    function bal_cleanup() {
+        if (bRunner) Matter.Runner.stop(bRunner);
+        if (bRender) {
+            Matter.Render.stop(bRender);
+            if (bRender.canvas) bRender.canvas.remove();
+        }
+        bEngine = null;
+        bRender = null;
+        bRunner = null;
+    }
+
+    /* ========================================================
+       2. لعبة إكس أو
+       ======================================================== */
+    let ttt_state = Array(9).fill('');
+    let ttt_turn = 'X';
+    let ttt_isBot = false;
+    let ttt_locked = false;
+
+    function ttt_start(botMode) {
+        ttt_isBot = botMode;
+        ttt_state.fill('');
+        ttt_turn = 'X';
+        ttt_locked = false;
+        nav('game-ttt');
+        ttt_render();
+        ttt_updateBadge();
+    }
+
+    function ttt_render() {
+        const grid = document.getElementById('ttt-grid');
+        grid.innerHTML = '';
+        ttt_state.forEach((val, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'ttt-cell';
+            cell.innerText = val;
+            if (val === 'X') cell.style.color = 'var(--primary)';
+            if (val === 'O') cell.style.color = 'var(--danger)';
+            cell.onclick = () => ttt_click(i);
+            grid.appendChild(cell);
+        });
+    }
+
+    function ttt_click(i) {
+        if (ttt_locked || ttt_state[i] !== '') return;
+        ttt_state[i] = ttt_turn;
+        ttt_render();
+
+        if (ttt_checkWinner()) return;
+
+        ttt_turn = ttt_turn === 'X' ? 'O' : 'X';
+        ttt_updateBadge();
+
+        if (ttt_isBot && ttt_turn === 'O') {
+            ttt_locked = true;
+            setTimeout(ttt_botAction, 650);
+        }
+    }
+
+    function ttt_botAction() {
+        const free = ttt_state.map((v, i) => v === '' ? i : null).filter(v => v !== null);
+        if (free.length > 0) {
+            const pick = free[Math.floor(Math.random() * free.length)];
+            ttt_state[pick] = 'O';
+            ttt_render();
+            if (ttt_checkWinner()) return;
+            ttt_turn = 'X';
+            ttt_updateBadge();
+        }
+        ttt_locked = false;
+    }
+
+    function ttt_checkWinner() {
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        for (const [a, b, c] of wins) {
+            if (ttt_state[a] && ttt_state[a] === ttt_state[b] && ttt_state[a] === ttt_state[c]) {
+                ttt_locked = true;
+                notify(`اللاعب ${ttt_state[a]} فاز بالجولة! 🎉`);
+                return true;
+            }
+        }
+        if (!ttt_state.includes('')) {
+            ttt_locked = true;
+            notify("تعادل! ما أحد فاز 🤝");
+            return true;
+        }
+        return false;
+    }
+
+    function ttt_updateBadge() {
+        const badge = document.getElementById('ttt-badge');
+        badge.innerText = ttt_turn === 'X' ? "دور اللاعب X" : (ttt_isBot ? "دور البوت... 🤖 (مقفل)" : "دور اللاعب O");
+        badge.style.color = ttt_turn === 'X' ? "var(--primary)" : "var(--danger)";
+    }
+
+    /* ========================================================
+       3. الذاكرة
+       ======================================================== */
+    const memIcons = ['🍎', '🚀', '💎', '🎸', '🏀', '🐼'];
+    let memCards = [], memFlipped = [], memMatched = 0, memBlock = false;
+
+    function mem_open() {
+        nav('game-mem');
+        const grid = document.getElementById('mem-grid');
+        grid.innerHTML = '';
+        memCards = [...memIcons, ...memIcons].sort(() => 0.5 - Math.random());
+        memFlipped = [];
+        memMatched = 0;
+        memBlock = false;
+
+        memCards.forEach(icon => {
+            const el = document.createElement('div');
+            el.className = 'mem-card';
+            el.innerHTML = `<span class="content">${icon}</span>`;
+            el.onclick = () => mem_flip(el, icon);
+            grid.appendChild(el);
+        });
+    }
+
+    function mem_flip(el, icon) {
+        if (memBlock || el.classList.contains('flipped')) return;
+        el.classList.add('flipped');
+        memFlipped.push({ el, icon });
+
+        if (memFlipped.length === 2) {
+            memBlock = true;
+            if (memFlipped[0].icon === memFlipped[1].icon) {
+                memMatched++;
+                memFlipped = [];
+                memBlock = false;
+                if (memMatched === memIcons.length) {
+                    setTimeout(() => notify("كفو عليك! أنهيت الذاكرة بنجاح 🧠✨", () => nav('menu')), 400);
+                }
+            } else {
+                setTimeout(() => {
+                    memFlipped[0].el.classList.remove('flipped');
+                    memFlipped[1].el.classList.remove('flipped');
+                    memFlipped = [];
+                    memBlock = false;
+                }, 800);
+            }
+        }
+    }
+
+    /* ========================================================
+       4. النقر السريع
+       ======================================================== */
+    let clkCount = 0, clkTime = 10, clkTimer = null, clkActive = false;
+
+    function clk_open() {
+        nav('game-clk');
+        clkCount = 0;
+        clkTime = 10;
+        clkActive = false;
+        clearInterval(clkTimer);
+        document.getElementById('clk-score').innerText = 'النقاط: 0';
+        document.getElementById('clk-time').innerText = 'الوقت: 10';
+        document.getElementById('clk-btn').style.display = 'block';
+        document.getElementById('clk-reset').style.display = 'none';
+    }
+
+    function clk_tap(e) {
+        if (e) e.preventDefault();
+        if (!clkActive) {
+            clkActive = true;
+            clkTimer = setInterval(() => {
+                clkTime--;
+                document.getElementById('clk-time').innerText = `الوقت: ${clkTime}`;
+                if (clkTime <= 0) {
+                    clearInterval(clkTimer);
+                    clkActive = false;
+                    document.getElementById('clk-btn').style.display = 'none';
+                    document.getElementById('clk-reset').style.display = 'block';
+                    notify(`انتهى الوقت! عدد النقرات: ${clkCount} ⚡`);
+                }
+            }, 1000);
+        }
+        if (clkTime > 0) {
+            clkCount++;
+            document.getElementById('clk-score').innerText = `النقاط: ${clkCount}`;
+        }
+    }
+
+    function clk_stop() { clearInterval(clkTimer); }
+
+    /* ========================================================
+       5. سرعة الاستجابة
+       ======================================================== */
+    let reactState = 0, reactTimer = null, reactStart = 0;
+
+    function react_open() {
+        nav('game-react');
+        react_clear();
+        const b = document.getElementById('react-box');
+        b.style.background = 'var(--card-bg)';
+        b.innerText = 'اضغط هنا للبدء';
+    }
+
+    function react_tap() {
+        const b = document.getElementById('react-box');
+        if (reactState === 0) {
+            reactState = 1;
+            b.style.background = 'var(--danger)';
+            b.innerText = 'انطر اللون الأخضر... لا تستعجل!';
+            reactTimer = setTimeout(() => {
+                reactState = 2;
+                b.style.background = 'var(--success)';
+                b.innerText = 'المس الشاشة الحيييين!';
+                reactStart = Date.now();
+            }, Math.random() * 2500 + 1500);
+        } else if (reactState === 1) {
+            clearTimeout(reactTimer);
+            reactState = 0;
+            b.style.background = 'var(--card-bg)';
+            notify('استعجلت قبل الأخضر! 😂');
+            b.innerText = 'اضغط للمحاولة ثانية';
+        } else if (reactState === 2) {
+            const ms = Date.now() - reactStart;
+            reactState = 0;
+            b.style.background = 'var(--card-bg)';
+            notify(`سرعتك: ${ms} جزء من الثانية! كفو 🔥`);
+            b.innerText = 'اضغط للعب ثانية';
+        }
+    }
+
+    function react_clear() { clearTimeout(reactTimer); reactState = 0; }
+
+    /* ========================================================
+       6. حجرة ورقة مقص
+       ======================================================== */
+    function rps_open() {
+        nav('game-rps');
+        document.getElementById('rps-bot-view').innerText = '🤖';
+        document.getElementById('rps-status').innerText = 'اختر حركتك لمواجهة البوت!';
+        document.getElementById('rps-status').style.color = 'var(--text-main)';
+    }
+
+    function rps_play(playerMove) {
+        const options = ['✊', '✋', '✌️'];
+        const botMove = options[Math.floor(Math.random() * 3)];
+        document.getElementById('rps-bot-view').innerText = botMove;
+        const st = document.getElementById('rps-status');
+
+        if (playerMove === botMove) {
+            st.innerText = 'تعادل! نفس الحركة 🤝';
+            st.style.color = 'var(--warn)';
+        } else if (
+            (playerMove === '✊' && botMove === '✌️') ||
+            (playerMove === '✋' && botMove === '✊') ||
+            (playerMove === '✌️' && botMove === '✋')
+        ) {
+            st.innerText = 'فزت على البوت! كفووو 🎉';
+            st.style.color = 'var(--success)';
+        } else {
+            st.innerText = 'البوت فاز عليك! 😂';
+            st.style.color = 'var(--danger)';
+        }
+    }
+
+    /* ========================================================
+       7. لحسة الألوان
+       ======================================================== */
+    let colScore = 0, colMatch = false;
+    const cNames = ['أحمر', 'أزرق', 'أخضر', 'أصفر'];
+    const cHex = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b'];
+
+    function col_open() {
+        nav('game-col');
+        colScore = 0;
+        document.getElementById('col-score').innerText = 'النقاط: 0';
+        col_next();
+    }
+
+    function col_next() {
+        const nameIdx = Math.floor(Math.random() * 4);
+        const hexIdx = Math.random() > 0.5 ? nameIdx : Math.floor(Math.random() * 4);
+        colMatch = (nameIdx === hexIdx);
+        const el = document.getElementById('col-display');
+        el.innerText = cNames[nameIdx];
+        el.style.color = cHex[hexIdx];
+    }
+
+    function col_vote(vote) {
+        if (vote === colMatch) {
+            colScore++;
+            document.getElementById('col-score').innerText = `النقاط: ${colScore}`;
+            col_next();
+        } else {
+            notify(`غلط! مخك علق 😂 نقاطك: ${colScore}`, () => col_open());
+        }
+    }
+
+    /* ========================================================
+       8. صيد الرقم
+       ======================================================== */
+    let targetNum = 0, guessTries = 0;
+
+    function guess_open() {
+        nav('game-guess');
+        targetNum = Math.floor(Math.random() * 100) + 1;
+        guessTries = 0;
+        document.getElementById('guess-input').value = '';
+        document.getElementById('guess-status').innerText = 'خمن رقماً بين 1 و 100';
+        document.getElementById('guess-status').style.color = 'var(--text-main)';
+    }
+
+    function guess_submit() {
+        const val = parseInt(document.getElementById('guess-input').value);
+        if (isNaN(val)) return;
+        guessTries++;
+        const st = document.getElementById('guess-status');
+
+        if (val === targetNum) {
+            notify(`كفووو جبته صح بعد ${guessTries} محاولات! 🎯`, () => guess_open());
+        } else if (val < targetNum) {
+            st.innerText = 'الرقم أكبر! ⬆️';
+            st.style.color = 'var(--warn)';
+        } else {
+            st.innerText = 'الرقم أصغر! ⬇️';
+            st.style.color = 'var(--warn)';
+        }
+    }
+
+    /* ========================================================
+       9. طق الملقوف
+       ======================================================== */
+    let moleScore = 0, moleTime = 15, moleTimer = null, moleLoop = null;
+
+    function mole_open() {
+        nav('game-mole');
+        moleScore = 0;
+        moleTime = 15;
+        document.getElementById('mole-score').innerText = 'النقاط: 0';
+        document.getElementById('mole-time').innerText = 'الوقت: 15';
+        document.getElementById('mole-reset').style.display = 'none';
+
+        const grid = document.getElementById('mole-grid');
+        grid.innerHTML = '';
+        for (let i = 0; i < 9; i++) {
+            grid.innerHTML += `<div class="mole-hole" onclick="mole_hit(${i})"><span id="mole-${i}"></span></div>`;
+        }
+
+        clearInterval(moleTimer);
+        clearTimeout(moleLoop);
+        mole_step();
+
+        moleTimer = setInterval(() => {
+            moleTime--;
+            document.getElementById('mole-time').innerText = `الوقت: ${moleTime}`;
+            if (moleTime <= 0) {
+                mole_clear();
+                document.getElementById('mole-reset').style.display = 'block';
+                notify(`انتهى الوقت! صكته ${moleScore} مرات 🔨`);
+            }
+        }, 1000);
+    }
+
+    function mole_step() {
+        for (let i = 0; i < 9; i++) {
+            const el = document.getElementById(`mole-${i}`);
+            if (el) el.innerText = '';
+        }
+        const pick = Math.floor(Math.random() * 9);
+        const target = document.getElementById(`mole-${pick}`);
+        if (target) target.innerText = '👺';
+        moleLoop = setTimeout(mole_step, Math.random() * 400 + 600);
+    }
+
+    function mole_hit(idx) {
+        const el = document.getElementById(`mole-${idx}`);
+        if (el && el.innerText === '👺' && moleTime > 0) {
+            moleScore++;
+            document.getElementById('mole-score').innerText = `النقاط: ${moleScore}`;
+            el.innerText = '💥';
+        }
+    }
+
+    function mole_clear() {
+        clearInterval(moleTimer);
+        clearTimeout(moleLoop);
+    }
+
+    /* ========================================================
+       10. الحساب الخاطف
+       ======================================================== */
+    let mathScore = 0, mathTime = 10, mathTimer = null, mathAns = 0;
+
+    function math_open() {
+        nav('game-math');
+        mathScore = 0;
+        document.getElementById('math-reset').style.display = 'none';
+        math_round();
+    }
+
+    function math_round() {
+        mathTime = 10;
+        document.getElementById('math-time').innerText = `الوقت: ${mathTime}`;
+        document.getElementById('math-score').innerText = `النقاط: ${mathScore}`;
+
+        clearInterval(mathTimer);
+        mathTimer = setInterval(() => {
+            mathTime--;
+            document.getElementById('math-time').innerText = `الوقت: ${mathTime}`;
+            if (mathTime <= 0) {
+                math_clear();
+                document.getElementById('math-reset').style.display = 'block';
+                notify(`انتهى الوقت! مجموع نقاطك: ${mathScore}`);
+            }
+        }, 1000);
+
+        const a = Math.floor(Math.random() * 20) + 1;
+        const b = Math.floor(Math.random() * 20) + 1;
+        mathAns = a + b;
+        document.getElementById('math-expr').innerText = `${a} + ${b}`;
+
+        const opts = [mathAns, mathAns + 2, mathAns - 2, mathAns + 5].sort(() => 0.5 - Math.random());
+        const box = document.getElementById('math-options');
+        box.innerHTML = '';
+        opts.forEach(val => {
+            box.innerHTML += `<button class="btn" style="font-size:1.3rem;" onclick="math_pick(${val})">${val}</button>`;
+        });
+    }
+
+    function math_pick(val) {
+        if (val === mathAns) {
+            mathScore++;
+            math_round();
+        } else {
+            math_clear();
+            document.getElementById('math-reset').style.display = 'block';
+            notify(`إجابة خاطئة! حلك كان ${val} والصح ${mathAns} 😂`);
+        }
+    }
+
+    function math_clear() { clearInterval(mathTimer); }
+
+    /* ========================================================
+       11. أنوار سيمون
+       ======================================================== */
+    let simonSeq = [], simonStep = 0, simonLocked = false;
+
+    function simon_open() {
+        nav('game-simon');
+        simonSeq = [];
+        simonStep = 0;
+        simon_next();
+    }
+
+    function simon_next() {
+        simonLocked = true;
+        simonStep = 0;
+        simonSeq.push(Math.floor(Math.random() * 4));
+        document.getElementById('simon-badge').innerText = `المستوى: ${simonSeq.length}`;
+
+        let i = 0;
+        const interval = setInterval(() => {
+            simon_flash(simonSeq[i]);
+            i++;
+            if (i >= simonSeq.length) {
+                clearInterval(interval);
+                simonLocked = false;
+            }
+        }, 700);
+    }
+
+    function simon_flash(id) {
+        const btn = document.getElementById(`simon-${id}`);
+        if (!btn) return;
+        btn.classList.add('lit');
+        setTimeout(() => btn.classList.remove('lit'), 350);
+    }
+
+    function simon_click(id) {
+        if (simonLocked) return;
+        simon_flash(id);
+
+        if (id === simonSeq[simonStep]) {
+            simonStep++;
+            if (simonStep === simonSeq.length) {
+                simonLocked = true;
+                setTimeout(simon_next, 800);
+            }
+        } else {
+            notify(`أخطأت بالتسلسل! وصلت للمستوى ${simonSeq.length} 💡`, () => simon_open());
+        }
+    }
+
+    /* ========================================================
+       12. نرد الحظ
+       ======================================================== */
+    const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+    function dice_open() {
+        nav('game-dice');
+        document.getElementById('dice-player').innerText = '🎲';
+        document.getElementById('dice-bot').innerText = '🎲';
+        document.getElementById('dice-status').innerText = 'ارمِ النرد لمنافسة البوت!';
+    }
+
+    function dice_roll() {
+        const pVal = Math.floor(Math.random() * 6);
+        const bVal = Math.floor(Math.random() * 6);
+        document.getElementById('dice-player').innerText = diceFaces[pVal];
+        document.getElementById('dice-bot').innerText = diceFaces[bVal];
+
+        const st = document.getElementById('dice-status');
+        if (pVal > bVal) {
+            st.innerText = 'كفووو فزت برقم أعلى! 🎉';
+            st.style.color = 'var(--success)';
+        } else if (pVal < bVal) {
+            st.innerText = 'البوت جاب رقم أعلى وخسرت 😂';
+            st.style.color = 'var(--danger)';
+        } else {
+            st.innerText = 'تعادل! ارموا مرة ثانية 🤝';
+            st.style.color = 'var(--warn)';
+        }
+    }
+
+    /* ========================================================
+       13. سرعة الأصابع (كتابة)
+       ======================================================== */
+    const typeWords = ['KUWAIT', 'GAMER', 'SWORD', 'ROCKET', 'LEVEL', 'SPEED', 'TURBO'];
+    let typeScore = 0, typeTime = 15, typeTimer = null, curWord = '';
+
+    function typing_open() {
+        nav('game-typing');
+        typeScore = 0;
+        typeTime = 15;
+        document.getElementById('typing-score').innerText = 'النقاط: 0';
+        document.getElementById('typing-time').innerText = 'الوقت: 15';
+        document.getElementById('typing-reset').style.display = 'none';
+        document.getElementById('typing-input').style.display = 'block';
+
+        typing_nextWord();
+        clearInterval(typeTimer);
+        typeTimer = setInterval(() => {
+            typeTime--;
+            document.getElementById('typing-time').innerText = `الوقت: ${typeTime}`;
+            if (typeTime <= 0) {
+                typing_clear();
+                document.getElementById('typing-input').style.display = 'none';
+                document.getElementById('typing-reset').style.display = 'block';
+                notify(`انتهى الوقت! عدد الكلمات الصحيحة: ${typeScore} ⌨️`);
+            }
+        }, 1000);
+    }
+
+    function typing_nextWord() {
+        curWord = typeWords[Math.floor(Math.random() * typeWords.length)];
+        document.getElementById('typing-target').innerText = curWord;
+        document.getElementById('typing-input').value = '';
+    }
+
+    function typing_check() {
+        const input = document.getElementById('typing-input');
+        if (input.value.trim().toUpperCase() === curWord) {
+            typeScore++;
+            document.getElementById('typing-score').innerText = `النقاط: ${typeScore}`;
+            typing_nextWord();
+        }
+    }
+
+    function typing_clear() { clearInterval(typeTimer); }
+
+    /* ========================================================
+       14. صيد الصفر المئوي
+       ======================================================== */
+    let swRunning = false, swStart = 0, swTimer = null;
+
+    function stopwatch_open() {
+        nav('game-stopwatch');
+        stopwatch_clear();
+        document.getElementById('stopwatch-num').innerText = '0.00';
+        document.getElementById('stopwatch-btn').innerText = 'ابدأ العداد ⏱️';
+    }
+
+    function stopwatch_toggle() {
+        const btn = document.getElementById('stopwatch-btn');
+        if (!swRunning) {
+            swRunning = true;
+            btn.innerText = 'وقف العداد! 🛑';
+            swStart = Date.now();
+            swTimer = setInterval(() => {
+                const elapsed = (Date.now() - swStart) / 1000;
+                document.getElementById('stopwatch-num').innerText = elapsed.toFixed(2);
+            }, 10);
+        } else {
+            swRunning = false;
+            clearInterval(swTimer);
+            btn.innerText = 'ابدأ من جديد ⏱️';
+            const val = document.getElementById('stopwatch-num').innerText;
+            if (val.endsWith('.00')) {
+                notify(`أسطورة! صدتها بالملي عند ${val} بالضبط! 🎯🔥`);
+            } else {
+                notify(`وقفت عند ${val}، حاول تجيب .00 بالضبط! 😉`);
+            }
+        }
+    }
+
+    function stopwatch_clear() {
+        clearInterval(swTimer);
+        swRunning = false;
+    }
+
+    /* ========================================================
+       15. تفادي الصخور
+       ======================================================== */
+    let dodgeCtx = null, dodgeLoop = null;
+    let dodgePlayer = { x: 135, y: 340, w: 30, h: 30 };
+    let dodgeRocks = [];
+    let dodgeScore = 0, dodgeOver = false;
+
+    function dodge_open() {
+        nav('game-dodge');
+        const cvs = document.getElementById('dodge-canvas');
+        dodgeCtx = cvs.getContext('2d');
+        dodgePlayer.x = cvs.width / 2 - 15;
+        dodgeRocks = [];
+        dodgeScore = 0;
+        dodgeOver = false;
+
+        cvs.onpointermove = (e) => {
+            const rect = cvs.getBoundingClientRect();
+            const px = (e.clientX - rect.left) * (cvs.width / rect.width);
+            dodgePlayer.x = Math.max(0, Math.min(cvs.width - dodgePlayer.w, px - dodgePlayer.w / 2));
+        };
+
+        cancelAnimationFrame(dodgeLoop);
+        dodge_tick();
+    }
+
+    function dodge_tick() {
+        if (dodgeOver) return;
+        const cvs = document.getElementById('dodge-canvas');
+        dodgeCtx.clearRect(0, 0, cvs.width, cvs.height);
+
+        if (Math.random() < 0.05) {
+            dodgeRocks.push({ x: Math.random() * (cvs.width - 20), y: -20, s: Math.random() * 2 + 2 });
+        }
+
+        dodgeCtx.fillStyle = '#3b82f6';
+        dodgeCtx.fillRect(dodgePlayer.x, dodgePlayer.y, dodgePlayer.w, dodgePlayer.h);
+
+        dodgeCtx.fillStyle = '#ef4444';
+        for (let i = dodgeRocks.length - 1; i >= 0; i--) {
+            const r = dodgeRocks[i];
+            r.y += r.s;
+            dodgeCtx.beginPath();
+            dodgeCtx.arc(r.x + 10, r.y + 10, 10, 0, Math.PI * 2);
+            dodgeCtx.fill();
+
+            if (
+                r.x < dodgePlayer.x + dodgePlayer.w &&
+                r.x + 20 > dodgePlayer.x &&
+                r.y < dodgePlayer.y + dodgePlayer.h &&
+                r.y + 20 > dodgePlayer.y
+            ) {
+                dodgeOver = true;
+                notify(`صدمتك الصخرة! جمعت ${dodgeScore} نقاط 💥`, () => dodge_open());
+                return;
+            }
+
+            if (r.y > cvs.height) {
+                dodgeRocks.splice(i, 1);
+                dodgeScore++;
+                document.getElementById('dodge-score').innerText = `النقاط: ${dodgeScore}`;
+            }
+        }
+
+        dodgeLoop = requestAnimationFrame(dodge_tick);
+    }
+
+    function dodge_clear() {
+        cancelAnimationFrame(dodgeLoop);
+        dodgeOver = true;
+    }
+
+    /* ========================================================
+       16. فقع الفقاعات
+       ======================================================== */
+    let bubbleScore = 0, bubbleTime = 15, bubbleTimer = null, bubbleSpawn = null;
+
+    function bubble_open() {
+        nav('game-bubble');
+        bubbleScore = 0;
+        bubbleTime = 15;
+        document.getElementById('bubble-score').innerText = 'النقاط: 0';
+        document.getElementById('bubble-time').innerText = 'الوقت: 15';
+        document.getElementById('bubble-reset').style.display = 'none';
+        document.getElementById('bubble-area').innerHTML = '';
+
+        clearInterval(bubbleTimer);
+        clearTimeout(bubbleSpawn);
+        bubble_create();
+
+        bubbleTimer = setInterval(() => {
+            bubbleTime--;
+            document.getElementById('bubble-time').innerText = `الوقت: ${bubbleTime}`;
+            if (bubbleTime <= 0) {
+                bubble_clear();
+                document.getElementById('bubble-reset').style.display = 'block';
+                notify(`انتهى الوقت! فقعت ${bubbleScore} فقاعات 🫧`);
+            }
+        }, 1000);
+    }
+
+    function bubble_create() {
+        const area = document.getElementById('bubble-area');
+        if (!area || bubbleTime <= 0) return;
+
+        const b = document.createElement('div');
+        b.className = 'bubble-item';
+        const size = Math.floor(Math.random() * 20) + 40;
+        b.style.width = size + 'px';
+        b.style.height = size + 'px';
+        b.style.left = Math.random() * (area.clientWidth - size) + 'px';
+        b.style.top = Math.random() * (area.clientHeight - size) + 'px';
+
+        b.onpointerdown = () => {
+            bubbleScore++;
+            document.getElementById('bubble-score').innerText = `النقاط: ${bubbleScore}`;
+            b.remove();
+        };
+
+        area.appendChild(b);
+        setTimeout(() => { if (b.parentNode) b.remove(); }, 1200);
+
+        bubbleSpawn = setTimeout(bubble_create, Math.random() * 300 + 400);
+    }
+
+    function bubble_clear() {
+        clearInterval(bubbleTimer);
+        clearTimeout(bubbleSpawn);
+        const area = document.getElementById('bubble-area');
+        if (area) area.innerHTML = '';
+    }
+</script>
+</body>
+</html>
